@@ -6,13 +6,13 @@ const { PrismaClient } = require("@prisma/client")
 const prisma = new PrismaClient();
 
 async function obterUsuario(login){
-  const user = await prisma.users.findUnique({
+  const user = await prisma.users.findFirst({
     where: { 
       login:{
         equals: login,
         mode: 'insensitive'
       }
-    },
+    }
   });
 
   return user;
@@ -62,7 +62,7 @@ async function validUser(login, pwd){
     return [true, result.isadmin];
   } catch (err) {
     console.error(err);
-    db.end();
+    // db.end();
     return false;
   }
 }
