@@ -3,7 +3,7 @@ const rc = require('./controlers/routesControl')
 const router = express.Router();
 
 // Create a new user
-router.post('/adduser', async (req, res) => {
+router.post('/adm/adduser', async (req, res) => {
     const { login, email, password, isadmin } = req.body;
 
     const user = await rc.createUser(login, email, password, isadmin)
@@ -12,7 +12,7 @@ router.post('/adduser', async (req, res) => {
 });
 
 // Update a user by ID
-router.put('/edituser/:id', async (req, res) => {
+router.put('/adm/edituser/:id', async (req, res) => {
     const { id } = req.params;
     const { login, email, password, isadmin } = req.body;
 
@@ -31,7 +31,7 @@ router.put('/edituser/:id', async (req, res) => {
 });
 
 // Delete a user by login
-router.delete('/deleteuser/:login', async (req, res) => {
+router.delete('/adm/deleteuser/:login', async (req, res) => {
     const { login } = req.params;
 
     try {
@@ -49,7 +49,7 @@ router.delete('/deleteuser/:login', async (req, res) => {
 });
 
 // Get all users
-router.get('/getall', async (req, res) => { 
+router.get('/adm/getall', async (req, res) => { 
   try {
       const result = await rc.obterAllUsers();
       res.status(200).json(result);
