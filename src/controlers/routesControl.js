@@ -51,16 +51,32 @@ async function updateUser(id, login, email, senha){
 }
 
 async function deleteUser(login){
-  const result = await prisma.users.delete({
-    where: { 
-      login:{
+  const user = await prisma.users.findFirst({
+    where: {
+      login: {
         equals: login,
-        mode: 'insensitive'
-      }
-    }
-  });
+        mode: "insensitive",
+      },
+    },
+    select: {
+      id: true,
+    },
+    });
 
-  return user;
+    // Se o usuário for encontrado
+  if (user) {
+    // Excluir a linha de acordo com o ID
+    const result = await prisma.users.delete({
+      where: {
+        id: user.id,
+      },
+    });
+    return true
+  } else {
+    // Se o usuário não for encontrado, lidar com o erro
+    console.error("Usuário não encontrado.");
+    return false
+  }
 }
 
 async function validarToken(login, token){
@@ -118,7 +134,7 @@ async function validUser(login, pwd){
 
 async function isUserConnected(login){
   try {
-    return isConnected(login);
+    return await isConnected(login);
   } catch (err) {
     console.error(err);
     return false;
@@ -143,25 +159,30 @@ async function validToken(login, token){
 }
 
 async function deleteToken(login){
-  try {
-    const result = await prisma.usertoken.delete({
-      where: { 
-        login:{
-          equals: login,
-          mode: 'insensitive'
-        }
-      }
+  // Buscar o ID do usuário
+  const user = await prisma.usertoken.findFirst({
+    where: {
+      login: {
+        equals: login,
+        mode: "insensitive",
+      },
+    },
+    select: {
+      id: true,
+    },
     });
 
-    if (!result) {
-      console.log('Token not found')
-      return false 
-    }
-
-    return true;
-  } catch (err) {
-    console.error(err);
-    return false;
+    // Se o usuário for encontrado
+  if (user) {
+    // Excluir a linha de acordo com o ID
+    const result = await prisma.usertoken.delete({
+      where: {
+        id: user.id,
+      },
+    });
+  } else {
+    // Se o usuário não for encontrado, lidar com o erro
+    console.error("Usuário não encontrado.");
   }
 }
 

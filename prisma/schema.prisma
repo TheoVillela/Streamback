@@ -9,14 +9,14 @@ datasource db {
 
 model users {
   id            Int      @id @default(autoincrement())
-  login         String   @db.VarChar(255)
-  email         String   @db.VarChar(255)
+  login         String   @db.VarChar(255) @unique
+  email         String   @db.VarChar(255) @unique
   password_hash String   @db.VarChar(255)
   isadmin       Boolean? @default(false)
 }
 
 model usertoken {
   id            Int      @id @default(autoincrement())
-  user          String   @db.VarChar(255)
-  token         String   @db.VarChar(255)
+  login         String   @db.VarChar(255) @unique
+  token         String   @db.VarChar(255) @unique
 }
