@@ -11,7 +11,7 @@ const config = {
 const connectionString = "postgres://postgres:2606@database_server:5432/streammotodb";
 
 function NovaConexao(){
-    return new pg.Client(connectionString);
+    return new pg.Client(connectionString); //or config parameter
 }
 
 module.exports = {

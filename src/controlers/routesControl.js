@@ -1,8 +1,6 @@
-const auth = require('../auth')
-const client = require('../bd/bdClient');
 const bcrypt = require('bcryptjs');
 const { PrismaClient } = require("@prisma/client")
-
+const jwk  = require("jsonwebtoken");
 const prisma = new PrismaClient();
 
 async function obterUsuario(login){
@@ -18,170 +16,196 @@ async function obterUsuario(login){
   return user;
 }
 
-async function CreateUser(login, email, senha){
+async function obterAllUsers(login){
+  const users = await prisma.users.findMany();
+
+  return users;
+}
+
+async function createUser(login, email, senha){
   const user = await prisma.users.create({
     data:{
       login,
       email,
-      password:await bcrypt.hash(senha, 10),
+      password_hash: await bcrypt.hash(senha, 10)
     }
   });
 
   return user;
 }
 
-async function validUser(login, pwd){
-  // const db = client.NovaConexao();
+async function updateUser(id, login, email, senha){
+  const user = await prisma.users.update({
+    where: {
+      id: id,
+    },
+    data:{
+      login,
+      email,
+      password_hash: await bcrypt.hash(senha, 10),
+      isadmin
+    }
+  });
+
+  return user;
+}
+
+async function deleteUser(login){
+  const result = await prisma.users.delete({
+    where: { 
+      login:{
+        equals: login,
+        mode: 'insensitive'
+      }
+    }
+  });
+
+  return user;
+}
+
+async function validarToken(login, token){
+  const user = await prisma.usertoken.findFirst({
+    where: { 
+      login:{
+        equals: login,
+        mode: 'insensitive'
+      }, AND : {
+        token: token
+      }
+    }
+  });
   
+  if(!user) 
+    return false;
+  else 
+    return true;
+}
+
+async function isConnected(login){
+  const user = await prisma.usertoken.findFirst({
+    where: { 
+      login:{
+        equals: login,
+        mode: 'insensitive'
+      }
+    }
+  });
+  
+  if(!user) 
+    return false;
+  else 
+    return true;
+}
+
+//-----------------------------------------------------------------
+
+
+async function validUser(login, pwd){
   try {
-    // db.connect();
-    
     const result = await obterUsuario(login)
-    
-    // await db.query(
-    //   'SELECT * FROM users WHERE login = $1',
-    //   [login]
-    // );
-
-    // if (result.rows.length === 0) {
-    //   db.end();
-    //   console.log('User not found.');
-    //   return false;
-    // }
-
-    // const user = result.rows[0];
     const isPasswordValid = await bcrypt.compare(pwd, result.password_hash);
 
     if (!isPasswordValid) {
-      // db.end();
       return false;
     }
-    
-    // db.end();
 
     return [true, result.isadmin];
   } catch (err) {
     console.error(err);
-    // db.end();
     return false;
   }
 }
 
 async function isUserConnected(login){
-  const db = client.NovaConexao();
-  
   try {
-    db.connect();
-    
-    const result = await db.query(
-      'SELECT * FROM usertoken WHERE login = $1',
-      [login]
-    );
-
-    if (result.rows.length === 0) {
-      console.log('User not connected');
-      return false
-    }
-  
-    console.log('User CONNECTED.');    
-    db.end();
-    return true;
+    return isConnected(login);
   } catch (err) {
     console.error(err);
-    db.end();
     return false;
   }
 }
 
 async function validToken(login, token){
-  const db = client.NovaConexao();
-  
   try {
-    db.connect();
-    
-    const result = await db.query(
-      'SELECT * FROM usertoken WHERE login = $1 and token = $2',
-      [login, token]
-    );
+    const result = await validarToken(login, token)
 
-    if (result.rows.length === 0) {
+    if (!result) {
       console.log('Invalid token');
-      db.end();
       return false
     }
   
     console.log('Valid token');    
-    db.end();
     return true;
   } catch (err) {
     console.error(err);
-    db.end();
     return false;
   }
 }
 
 async function deleteToken(login){
-  const db = client.NovaConexao();
   try {
-    db.connect();
-    
-    const result = await db.query('DELETE FROM usertoken WHERE login = $1', [login]);
+    const result = await prisma.usertoken.delete({
+      where: { 
+        login:{
+          equals: login,
+          mode: 'insensitive'
+        }
+      }
+    });
 
-    if (result.rowCount === 0) {
-      db.end();
+    if (!result) {
       console.log('Token not found')
       return false 
     }
 
-    db.end();
     return true;
   } catch (err) {
     console.error(err);
-    db.end();
+    return false;
   }
 }
 
-function startStream(){
-    //O HLS é um protocolo de streaming de vídeo popular que é amplamente suportado por navegadores e dispositivos.
-    //Para usar o HLS, o back end em Node deve usar uma biblioteca como o Hls.js.
-   const fs = require('fs');
-   const hls = require('hls');
-
-   const stream = fs.createReadStream('video.mp4');
-
-   const hlsSegmenter = new hls.Segmenter({
-       output: 'stream.m3u8',
-       segmentLength: 10,
-   });
-
-   hlsSegmenter.addStream(stream);
-
-   hlsSegmenter.start();
-   
-   //return hlsSegmenter.start();
-   //Este código irá criar um arquivo stream.m3u8 que contém uma lista de segmentos de vídeo.
-}
-
 async function salvarToken(login, token){
-    const db = client.NovaConexao();
-
     try {
-        db.connect();
-      
-        const result = await db.query('INSERT INTO usertoken (login, token) VALUES ($1, $2)', [login, token]);
-        db.end();
+      const tokenaccess = await prisma.users.create({
+        data:{
+          login,
+          token
+        }
+      });
+      return tokenaccess;
     } catch (err) {
         console.error(err);
-        db.end();
     }
+}
+
+function generateToken(login, pwd){
+  const user = {
+      login: login,
+      pwd: pwd
+  };
+    
+  const secretKey = "secret";  
+  const token = jwk.sign(
+      { id: user.id, login: user.login },
+      secretKey,
+      { expiresIn: '1h' }
+    );
+    
+  console.log(token);
+  return token;
 }
 
 module.exports = {
     validUser,
     validToken,
     deleteToken,
-    startStream,
     isUserConnected,
-    salvarToken
+    salvarToken,
+    deleteUser,
+    updateUser,
+    createUser,
+    obterAllUsers,
+    generateToken
 };
 

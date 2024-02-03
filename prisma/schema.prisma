@@ -14,3 +14,9 @@ model users {
   password_hash String   @db.VarChar(255)
   isadmin       Boolean? @default(false)
 }
+
+model usertoken {
+  id            Int      @id @default(autoincrement())
+  user          String   @db.VarChar(255)
+  token         String   @db.VarChar(255)
+}
