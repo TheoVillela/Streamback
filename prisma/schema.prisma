@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABA_URL")
+  url      = "postgres://postgre:0sB1DbmV7TVs58M22bjRiRA46Csf6I2m@dpg-cmumqa8cmk4c73aclt2g-a/streammotodb"
 }
 
 model users {
