@@ -188,7 +188,7 @@ async function deleteToken(login){
 
 async function salvarToken(login, token){
     try {
-      const tokenaccess = await prisma.users.create({
+      const tokenaccess = await prisma.usertoken.create({
         data:{
           login,
           token
